@@ -4,6 +4,7 @@ import com.user_service.service.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,6 +34,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
 
@@ -59,15 +61,29 @@ public class SecurityConfiguration {
                     auth
                             .requestMatchers("/auth/**").permitAll()
                             .requestMatchers("/swagger-ui*/**","/v3/api-docs/**").permitAll()
+                            .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
                             .anyRequest().authenticated();
                 })
                 .csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class)
-                .oauth2Login((login)-> login.loginPage("/auth/google")
-                        .defaultSuccessUrl("/auth/oauth2/success") // Redirect after successful login
+                .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/oauth2/**") // This security chain will apply only to `/oauth2/**` endpoints
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/auth/auth2/login")
+                        .defaultSuccessUrl("/auth/oauth2/success")
                         .failureUrl("/auth/oauth2/failure"))
                 .httpBasic(Customizer.withDefaults());
+
         return http.build();
     }
 }

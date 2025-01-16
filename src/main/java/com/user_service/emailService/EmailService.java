@@ -7,10 +7,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class EmailService {
 
-    private final JavaMailSender  mailSender;
+    private final JavaMailSender mailSender;
+    private static Map<String ,String> map = new HashMap<>();
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;

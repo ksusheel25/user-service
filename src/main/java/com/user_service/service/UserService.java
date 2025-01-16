@@ -1,6 +1,5 @@
 package com.user_service.service;
 
-
 import com.user_service.model.User;
 import com.user_service.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public List<com.user_service.model.User> allUsers() {
+    public List<User> allUsers() {
         List<User> users = new ArrayList<>();
         userRepository.findAll().forEach(users::add);
         return users;
