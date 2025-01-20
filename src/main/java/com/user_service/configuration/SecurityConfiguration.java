@@ -1,7 +1,6 @@
 package com.user_service.configuration;
 
 import com.user_service.service.JwtAuthenticationFilter;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -22,6 +21,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -34,56 +34,49 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-
-                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .cors(cors ->{
-                    cors.configurationSource(new CorsConfigurationSource() {
-
-                        @Override
-                        public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-
-                            CorsConfiguration cfg= new CorsConfiguration();
-                            cfg.setAllowedOriginPatterns(Collections.singletonList("*"));
-                            cfg.setAllowedMethods(Collections.singletonList("*"));
-                            cfg.setAllowCredentials(true);
-                            cfg.setAllowedHeaders(Collections.singletonList("*"));
-                            cfg.setExposedHeaders(List.of("Authorization", "Content-Type"));
-                            return cfg;
-
-                        }
-                    });
-                })
-
-                .authorizeHttpRequests(auth ->{
-                    auth
-                            .requestMatchers("/auth/**").permitAll()
-                            .requestMatchers("/swagger-ui*/**","/v3/api-docs/**").permitAll()
-                            .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
-                            .anyRequest().authenticated();
-                })
-                .csrf(AbstractHttpConfigurer::disable)
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
-        return http.build();
+    public CorsConfigurationSource corsConfigurationSource() {
+        return request -> {
+            CorsConfiguration cfg = new CorsConfiguration();
+            cfg.setAllowedOriginPatterns(Collections.singletonList("*"));
+            cfg.setAllowedMethods(Collections.singletonList("*"));
+            cfg.setAllowCredentials(true);
+            cfg.setAllowedHeaders(Collections.singletonList("*"));
+            cfg.setExposedHeaders(List.of("Authorization", "Content-Type"));
+            return cfg;
+        };
     }
 
     @Bean
-    @Order(2)
+    @Order(1)
     public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/oauth2/**") // This security chain will apply only to `/oauth2/**` endpoints
+                .securityMatcher("/oauth2/**") // Ensure this chain applies only to `/oauth2/**`
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/auth/auth2/login")
+                        .loginPage("/auth/oauth2/login")
                         .defaultSuccessUrl("/auth/oauth2/success")
                         .failureUrl("/auth/oauth2/failure"))
                 .httpBasic(Customizer.withDefaults());
+        return http.build();
+    }
 
+    @Bean
+    @Order(2) // Order matters; apply this chain last
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
+        http
+                .securityMatcher(request -> !request.getRequestURI().startsWith("/oauth2")) // Exclude `/oauth2/**`
+                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui*/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
+                        .anyRequest().authenticated())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
         return http.build();
     }
 }
