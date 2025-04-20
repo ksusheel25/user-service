@@ -53,6 +53,7 @@ public class SecurityConfiguration {
                 .securityMatcher("/oauth2/**") // Ensure this chain applies only to `/oauth2/**`
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/swagger-ui*/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/auth/oauth2/login")
