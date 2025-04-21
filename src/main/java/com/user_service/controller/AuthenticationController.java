@@ -53,7 +53,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<User> register(@RequestBody RegisterUserDto registerUserDto) {
+    public ResponseEntity<String> register(@RequestBody RegisterUserDto registerUserDto) {
 
         User registeredUser = authenticationService.signup(registerUserDto);
 
@@ -61,9 +61,9 @@ public class AuthenticationController {
         registeredUser.setVerificationToken(token);
         userRepository.save(registeredUser);
 
-        String verificationLink = "http://localhost:8005/auth/verify-email?token=" + token;
+        String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
         emailService.sendVerificationEmail(registeredUser.getEmail(), verificationLink);
-        return ResponseEntity.ok(registeredUser);
+        return ResponseEntity.ok("User registered successfully. Please verify your email");
     }
 
     @GetMapping("/verify-email")
@@ -85,8 +85,14 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
+    public ResponseEntity<?> authenticate(@RequestBody LoginUserDto loginUserDto) {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
+        String verificationToken = authenticatedUser.getVerificationToken();
+        if(!authenticatedUser.isEmailVerified()) {
+            String verificationLink = "http://localhost:8080/auth/verify-email?token=" + verificationToken;
+            emailService.sendVerificationEmail(authenticatedUser.getEmail(), verificationLink);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email not verified. A new verification link has been sent to your email.");
+        }
         String jwtToken = jwtService.generateToken(authenticatedUser);
         LoginResponse loginResponse = LoginResponse.builder().token(jwtToken).expiresIn(jwtService.getExpirationTime()).build();
         return ResponseEntity.ok(loginResponse);
@@ -190,7 +196,7 @@ public class AuthenticationController {
         userRepository.save(user);
 
         // Send reset link via email
-        String resetLink = "http://localhost:8005/auth/reset-password?token=" + resetToken;
+        String resetLink = "http://localhost:8080/auth/reset-password?token=" + resetToken;
         emailService.sendResetPasswordEmail(user.getEmail(), resetLink);
 
         return ResponseEntity.ok("Password reset link has been sent to your email.");
