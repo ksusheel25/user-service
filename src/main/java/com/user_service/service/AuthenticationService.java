@@ -8,7 +8,9 @@ import com.user_service.model.User;
 import com.user_service.repository.RoleRepository;
 import com.user_service.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -57,14 +59,25 @@ public class AuthenticationService {
     }
 
     public User authenticate(LoginUserDto input) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            input.getEmail(),
+                            input.getPassword()
+                    )
+            );
 
-        return userRepository.findByEmail(input.getEmail())
-                .orElseThrow();
+            return userRepository.findByEmail(input.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        } catch (DisabledException e) {
+            User user = userRepository.findByEmail(input.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            if (!user.isEmailVerified()) {
+                return user;
+            }
+            throw e;
+        }
     }
 }

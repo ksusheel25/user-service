@@ -73,7 +73,7 @@ public class AuthenticationController {
             user.setEmailVerified(true);
             user.setVerificationToken(null); // Clear the token
             userRepository.save(user);
-            return ResponseEntity.ok("Email verified successfully!");
+            return ResponseEntity.ok("Email verified successfully!, Please login to your account.");
         } else {
             return ResponseEntity.badRequest().body("Invalid verification token.");
         }
@@ -98,10 +98,11 @@ public class AuthenticationController {
         return ResponseEntity.ok(loginResponse);
     }
 
+    // OAuth2 Login url like "/auth2/login?provider=google"
     @GetMapping("/auth2/login")
     public RedirectView oauth2Login(@RequestParam(required = false) String provider) {
         ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId(provider);
-        log.info("inside oauth2Login {}", clientRegistration);
+        log.info("inside oauth2Login");
         String redirectUri = UriComponentsBuilder.fromUriString(clientRegistration.getProviderDetails().getAuthorizationUri())
                 .queryParam("response_type", "code")
                 .queryParam("client_id", clientRegistration.getClientId())

@@ -49,6 +49,7 @@ public class EmailService {
     public void sendVerificationEmail(String toEmail, String verificationLink) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
+        message.setFrom(message.getFrom());
         message.setSubject("Email Verification");
         message.setText("Please verify your email by clicking the following link: " + verificationLink);
         mailSender.send(message);
