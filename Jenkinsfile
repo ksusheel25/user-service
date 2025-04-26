@@ -26,6 +26,13 @@ pipeline {
             }
         }
 
+        stage('List Files') {
+            steps {
+                sh 'ls -al build/libs'
+            }
+        }
+
+
         stage('Archive Artifacts') {
             steps {
                 archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
