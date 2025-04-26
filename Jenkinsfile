@@ -11,6 +11,9 @@ pipeline {
             steps {
                 sh 'chmod +x ./gradlew'
                 sh './gradlew clean build'
+                sh 'ls -la'
+                sh 'ls -la build/libs'
+                sh './gradlew clean build --info' 
             }
         }
 
@@ -25,13 +28,6 @@ pipeline {
                 sh './gradlew test'
             }
         }
-
-        stage('List Files') {
-            steps {
-                sh 'ls -al build/libs'
-            }
-        }
-
 
         stage('Archive Artifacts') {
             steps {
