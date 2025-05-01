@@ -4,6 +4,7 @@ import com.user_service.service.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -64,20 +65,33 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @Order(2) // Order matters; apply this chain last
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
-                .securityMatcher(request -> !request.getRequestURI().startsWith("/oauth2")) // Exclude `/oauth2/**`
-                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui*/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
-                        .anyRequest().authenticated())
-                .csrf(AbstractHttpConfigurer::disable)
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
+            .securityMatcher(request -> !request.getRequestURI().startsWith("/oauth2"))
+            .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/swagger-ui*/**", "/v3/api-docs/**").permitAll()
+                
+                // User endpoints
+                .requestMatchers(HttpMethod.GET, "/users/me").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/users/").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                
+                // Role management endpoints
+                .requestMatchers("/roles/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/roles").hasRole("SUPER_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/roles/**").hasRole("SUPER_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/roles/*/assign/*").hasRole("SUPER_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/roles/*/remove/*").hasRole("SUPER_ADMIN")
+                
+                // Require authentication for any other endpoint
+                .anyRequest().authenticated())
+            .csrf(AbstractHttpConfigurer::disable)
+            .authenticationProvider(authenticationProvider)
+            .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
         return http.build();
     }
 }

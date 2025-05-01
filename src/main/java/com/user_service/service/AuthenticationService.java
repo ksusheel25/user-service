@@ -41,20 +41,16 @@ public class AuthenticationService {
 
     public User signup(RegisterUserDto input) {
         Set<Role> roleEntities = new HashSet<>();
-        for (String roleName : input.getRoles()) {
-            RoleType roleType = RoleType.valueOf(roleName.toUpperCase()); // Convert string to enum
-            Optional<Role> role = roleRepository.findByName(roleType);
-            if (role.isPresent()) {
-                roleEntities.add(role.get()); // Add role to the user's roles
-            } else {
-                throw new IllegalArgumentException("Role not found: " + roleName);
-            }
-        }
+        Role userRole = roleRepository.findByName(RoleType.USER)
+                .orElseThrow(() -> new RuntimeException("Default user role not found"));
+        roleEntities.add(userRole);
+        
         User user = User.builder()
                 .fullName(input.getFullName())
                 .email(input.getEmail())
                 .roles(roleEntities)
-                .password(passwordEncoder.encode(input.getPassword())).build();
+                .password(passwordEncoder.encode(input.getPassword()))
+                .build();
         return userRepository.save(user);
     }
 

@@ -23,7 +23,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,17 +38,15 @@ public class AuthenticationController {
     private final UserRepository userRepository; // Add this
     private final RestTemplate restTemplate = new RestTemplate();
     private final EmailService emailService;
-    private final RoleRepository roleRepository;
 
     public AuthenticationController(JwtService jwtService, ClientRegistrationRepository clientRegistrationRepository,
                                     AuthenticationService authenticationService,
-                                    UserRepository userRepository, EmailService emailService, RoleRepository roleRepository) {
+                                    UserRepository userRepository, EmailService emailService) {
         this.jwtService = jwtService;
         this.clientRegistrationRepository = clientRegistrationRepository;
         this.authenticationService = authenticationService;
         this.userRepository = userRepository;
         this.emailService = emailService;
-        this.roleRepository = roleRepository;
     }
 
     @PostMapping("/signup")
@@ -167,7 +164,6 @@ public class AuthenticationController {
                     RegisterUserDto registerUserDto = new RegisterUserDto();
                     registerUserDto.setFullName(name);
                     registerUserDto.setEmail(email);
-                    registerUserDto.setRoles(List.of("USER"));
                     registerUserDto.setPassword("");
                     return authenticationService.signup(registerUserDto);
                 });

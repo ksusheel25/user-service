@@ -1,6 +1,6 @@
 package com.user_service.configuration;
 
-import com.user_service.service.UserDetailServiceImpl;
+import com.user_service.service.impl.UserDetailServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

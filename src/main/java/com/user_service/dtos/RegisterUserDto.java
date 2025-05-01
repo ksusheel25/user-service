@@ -16,6 +16,4 @@ public class RegisterUserDto {
 
     private String fullName;
     private boolean emailVerified;
-
-    private List<String> roles = new ArrayList<>();
 }

@@ -1,54 +1,65 @@
 package com.user_service.exception;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import jakarta.validation.ConstraintViolationException;
 import java.nio.file.AccessDeniedException;
 import java.security.SignatureException;
+import java.time.Instant;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleSecurityException(Exception exception) {
         ProblemDetail errorDetail = null;
-        exception.printStackTrace();
 
         if (exception instanceof BadCredentialsException) {
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(401), exception.getMessage());
             errorDetail.setProperty("description", "The username or password is incorrect");
-
-            return errorDetail;
         }
-
-        if (exception instanceof AccountStatusException) {
+        else if (exception instanceof AccountStatusException) {
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The account is locked");
         }
-
-        if (exception instanceof AccessDeniedException) {
+        else if (exception instanceof AccessDeniedException) {
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "You are not authorized to access this resource");
         }
-
-        if (exception instanceof SignatureException) {
+        else if (exception instanceof SignatureException) {
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The JWT signature is invalid");
         }
-
-        if (exception instanceof ExpiredJwtException) {
+        else if (exception instanceof ExpiredJwtException) {
             errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(403), exception.getMessage());
             errorDetail.setProperty("description", "The JWT token has expired");
         }
-
-        if (errorDetail == null) {
-            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), exception.getMessage());
-            errorDetail.setProperty("description", "Unknown internal server error.");
+        else if (exception instanceof DataIntegrityViolationException) {
+            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), "Data integrity violation");
+            errorDetail.setProperty("description", "Operation violates database constraints (e.g., duplicate role)");
         }
+        else if (exception instanceof ConstraintViolationException) {
+            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(400), "Validation failed");
+            errorDetail.setProperty("description", "One or more fields failed validation");
+        }
+        else if (exception instanceof IllegalArgumentException) {
+            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(400), exception.getMessage());
+            errorDetail.setProperty("description", "Invalid input provided");
+        }
+        else {
+            errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(500), "Internal Server Error");
+            errorDetail.setProperty("description", "An unexpected error occurred");
+        }
+
+        // Add common properties
+        errorDetail.setProperty("timestamp", Instant.now().toString());
+        errorDetail.setProperty("exception", exception.getClass().getSimpleName());
 
         return errorDetail;
     }
