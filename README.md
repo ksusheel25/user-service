@@ -149,16 +149,4 @@ Below is a list of the main API endpoints provided by the User Service, along wi
     }
     ```
 
-#### Health Check
-
-- **GET /actuator/health**  
-    **Input:**  
-    No request body required.  
-    **Output:**  
-    ```json
-    {
-      "status": "UP"
-    }
-    ```
-
 For detailed API documentation, refer to the OpenAPI specification available at `/swagger-ui.html` after running the service.
